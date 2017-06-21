@@ -16,14 +16,6 @@ import sun.reflect.generics.reflectiveObjects.NotImplementedException
 
 object ProjectFortis extends App {
 
-  private val pipelines = List[Pipeline](
-    InstagramPipeline,
-    RadioPipeline,
-    TwitterPipeline,
-    FacebookPipeline,
-    TadawebPipeline
-  )
-
   // TODO: create helper method to augment Settings object with data from Cassandra
   // TODO: move most of these settings to Cassandra
   private implicit object Settings extends Settings {
@@ -79,10 +71,14 @@ object ProjectFortis extends App {
     val streamProvider = StreamProviderFactory.create()
     val streamRegistry = getStreamRegistry
 
+    val pipelines = List[Pipeline](
+      new TadawebPipeline(ssc, streamProvider, streamRegistry, TransformContext)
+    )
+
     // Attach each pipeline (aka code path)
     // 'fortisEvents' is the stream of analyzed data aggregated (union) from all pipelines
     val fortisEvents = pipelines.flatMap(
-      pipeline => pipeline(streamProvider, streamRegistry, ssc, TransformContext)
+      _.output
     ).reduceOption(_.union(_))
 
     // TODO: other computations and save to DB
